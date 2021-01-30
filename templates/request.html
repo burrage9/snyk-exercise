@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>{% block title %} Request a New Dependency Tree {% endblock %}</h1>
+
+<form method="post">
+    <div class="form-group">
+        <label for="title">Name</label>
+        <input type="text" name="name"
+               placeholder="Package name" class="form-control"
+               value="{{ request.form['name'] }}"></input>
+    </div>
+
+    <div class="form-group">
+        <label for="version">Version</label>
+        <textarea name="version" placeholder="Package Version"
+                  class="form-control">{{ request.form['Version'] }}</textarea>
+    </div>
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+</form>
+{% endblock %}
