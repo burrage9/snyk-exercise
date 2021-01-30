@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{% block title %} Dependencies Fetching Tool {% endblock %}</h1>
+    {% for packages in packages %}
+        <a href="#">
+            <h2>{{ packages['name'] }}</h2>
+        </a>
+        <h2>{{ packages['created'] }}</h2>
+        <h2>{{ packages['version'] }}</h2>
+        <h2>{{ packages['dependencies'] }}</h2>
+        <hr>
+    {% endfor %}
+{% endblock %}
