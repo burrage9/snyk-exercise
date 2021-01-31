@@ -68,7 +68,6 @@ def tablelookup(name, version):
     if not data:
         return -1
     else:
-        g_output = '23'
         return data[0]['id']
         
 def dbinsert(message, name, version, dependencies):
@@ -127,42 +126,57 @@ def remotefetch(name, version):
                         #something has gone wrong, in inserting into the table
                         return render_template('request.html')
                     
-    return render_template('request.html')
+    #return render_template('request.html')
     
 def diplayresults(packages):
+    global g_output
     #shouldn't just assume we're in a 1 item array
     deps = packages[0][4]
     
     start = 0
     end = 1
     i = 0
-    dep_list = [0] * 100 #max number of deps?
+    count = 0
+    in_list = [0] * 100 #max number of deps?
+    out_list = [0] * 100 #max number of deps?
 
     end = deps.find(",")
     
     while end != -1:
-        dep_list[i] = deps[start:end]
+        in_list[i] = deps[start:end]
         start = end + 1
         end = deps.find(",",start)
         i = i+1
         
+    #hack to include the last entry in the list (which doesn't have a following ','
+    in_list[i] = deps[start:]
     i=0
-    while dep_list[i] != 0:
+    
+    while (in_list[i] != 0) and (i<10):
         start = 0
-        end = 1
-        end = dep_list[i].find(":")
-        name = dep_list[i][2:(end-1)] #need to ignore quote marks
+        end = in_list[i].find(":")
+        name = in_list[i][1:(end-1)] #need to ignore quote marks
         
-        version = dep_list[i][end+2:len(dep_list[i])]
+        version = in_list[i][end+2:-1]
 
         #for now we will just ignore the ~, > etc of the version number, and just find the first number character.
         m = re.search(r"\d",version)
 
-        version = version[m.start():]
-            
-        getpackageinfo(name, version)
+        formatedversion = version[m.start():]
+
+        getpackageinfo(name, formatedversion)
         #can trust that at this point g_output is the row in the table
         
-    return dep_list
+        text = ''.join(('SELECT dependencies FROM packages WHERE id = ',str(g_output),' '))
+        subdeps = dbquery(text)
+
+        #for each dependency add it to our output list, 
+        for subdep in subdeps:
+            out_list[count] = subdep[0]
+            count = count + 1
+            
+        i=i+1
+        
+    return out_list
     
     
