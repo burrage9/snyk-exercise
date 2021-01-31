@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{% block title %} Dependencies Fetching Tool {% endblock %}</h1>
+    {% for packages in packages %}
+        <h2>{{ packages['dependencies'] }}</h2>
+    {% endfor %}
+{% endblock %}
