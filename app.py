@@ -10,20 +10,23 @@ def get_db_connection():
     return conn
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = secrets.secretkey
+app.config['SECRET_KEY'] = secrets.secretkey 
 
 g_output = '0'
 MAX_DEPS = 1000 #this should go in a config file - also we need to somehow calculate what this value is
 
 @app.route('/')
 def index():
+    #Homepage prints the full results of the DB
     query = 'SELECT * FROM packages'
     packages = dbquery(query)
     return render_template('index.html', packages=packages)
     
 @app.route('/results')
 def results():
-    global g_output
+    # Results prints the dependency list of the requested package
+
+    global g_output  # using this global as a messy hack to pass around the row of the package in the DB.
     text = ''.join(('SELECT * FROM packages WHERE id = ',str(g_output),' '))
     
     packages = dbquery(text)
@@ -36,6 +39,7 @@ def results():
     
 @app.route('/request', methods=('GET', 'POST'))
 def requestform():
+    # The request form allows the user to enter a package name and version
     if request.method == 'POST':
         name = request.form['name']
         version = request.form['version']
@@ -49,7 +53,7 @@ def requestform():
         """
 
         if not name:
-            flash('Name is required!') #should we check for version too?
+            flash('Name is required!') #we should check for version being present too
         else:
             getpackageinfo(name, version)
 
@@ -72,12 +76,14 @@ def tablelookup(name, version):
         return data[0]['id']
         
 def dbinsert(message, name, version, dependencies):
+    #pushes a package into the SQL DB
     conn = get_db_connection()
     conn.execute(message,(name, version,dependencies))
     conn.commit()
     conn.close()
 
 def dbquery(message):
+    # makes a call to the SQL DB using a preconstructed text string
     conn = get_db_connection()
     ret = conn.execute(message).fetchall()
     conn.commit()
@@ -101,36 +107,43 @@ def remotefetch(name, version):
     url = ''.join(('https://registry.npmjs.org/',name,'/',version))
     r = requests.get(url)
 
+    #Make sure we had a connection
     if r.status_code != 200:
         flash('Error connecting to NPM registry')
-    else:
-        findret = r.text.find("""dependencies""")
-        if findret == -1:
-            return render_template('request.html')
-        else:
-            i = findret
-            start = r.text.find("{",i)
-            if start == -1:
-                flash('Dependencies, but no dependencies ?!?')
-                return render_template('request.html')
-            else:
-                end = r.text.find("}",start)
-                if end == -1:
-                    flash('Open brackets but no close brackets?!?')
-                    return render_template('request.html')
-                else:
-                    dep_list = r.text[start+1:end]
-                    dbinsert('INSERT INTO packages (name, version,dependencies) VALUES (?,?,?)',name, version, dep_list)
+        return render_template('index.html')
+
+    #check if there are any dependencies
+    findret = r.text.find("""dependencies""")
+    if findret == -1:
+        return render_template('request.html')
+
+    #find the open bracket - the start of the dependencies
+    i = findret
+    start = r.text.find("{",i)
+    if start == -1:
+        flash('Dependencies, but no dependencies ?!?')
+        return render_template('request.html')
+        
+    #find the close bracket - the end of the dependencies
+    end = r.text.find("}",start)
+    if end == -1:
+        flash('Open brackets but no close brackets?!?')
+        return render_template('request.html')
+
+    # Push the retrieved list into our DB
+    dep_list = r.text[start+1:end]
+    dbinsert('INSERT INTO packages (name, version,dependencies) VALUES (?,?,?)',name, version, dep_list)
+    
+    #fetch back the new row id, so it can be displayed
+    g_output = tablelookup(name, version)
+    if g_output == -1:
+        #something has gone wrong, in inserting into the table
+        return render_template('request.html')
                     
-                    #fetch back the new row id, so it can be displayed
-                    g_output = tablelookup(name, version)
-                    if g_output == -1:
-                        #something has gone wrong, in inserting into the table
-                        return render_template('request.html')
-                    
-    #return render_template('request.html')
+    
     
 def diplayresults(packages):
+    # recursively fetches the dependencies of 'packages[0]' populating them into out_list which is returned
     global g_output
     #shouldn't just assume we're in a 1 item array
     deps = packages[0][4]
@@ -144,6 +157,7 @@ def diplayresults(packages):
 
     end = deps.find(",")
     
+    #populate the list with the list of the dependencies of the highest level package.
     while end != -1:
         in_list[i] = deps[start:end]
         start = end + 1
@@ -154,6 +168,7 @@ def diplayresults(packages):
     in_list[i] = deps[start:]
     i=0
     
+    #walk the list, adding new entries for every package
     while (in_list[i] != 0):
         out_list[count] = in_list[i][1:-1]
         count = count + 1
