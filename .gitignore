@@ -1,4 +1,5 @@
 secrets.py
+database.db
 *.pyc
 *.swp
 __pycache__/**
