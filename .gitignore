@@ -1,2 +1,5 @@
 secrets.py
-__pycache__/secrets.cpython-38.pyc
+*.pyc
+*.swp
+__pycache__/**
+

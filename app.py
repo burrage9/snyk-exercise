@@ -13,6 +13,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = secrets.secretkey
 
 g_output = '0'
+MAX_DEPS = 1000 #this should go in a config file - also we need to somehow calculate what this value is
 
 @app.route('/')
 def index():
@@ -103,10 +104,11 @@ def remotefetch(name, version):
     if r.status_code != 200:
         flash('Error connecting to NPM registry')
     else:
-        i = r.text.find("""dependencies""")
-        if i == -1:
+        findret = r.text.find("""dependencies""")
+        if findret == -1:
             return render_template('request.html')
         else:
+            i = findret
             start = r.text.find("{",i)
             if start == -1:
                 flash('Dependencies, but no dependencies ?!?')
@@ -137,8 +139,8 @@ def diplayresults(packages):
     end = 1
     i = 0
     count = 0
-    in_list = [0] * 100 #max number of deps?
-    out_list = [0] * 100 #max number of deps?
+    in_list = [0] * MAX_DEPS #max number of deps?
+    out_list = [0] * MAX_DEPS #max number of deps?
 
     end = deps.find(",")
     
@@ -148,18 +150,21 @@ def diplayresults(packages):
         end = deps.find(",",start)
         i = i+1
         
-    #hack to include the last entry in the list (which doesn't have a following ','
+    #hack to include the last entry in the list (which doesn't have a following ',')
     in_list[i] = deps[start:]
     i=0
     
-    while (in_list[i] != 0) and (i<10):
+    while (in_list[i] != 0):
+        out_list[count] = in_list[i][1:-1]
+        count = count + 1
+
         start = 0
         end = in_list[i].find(":")
-        name = in_list[i][1:(end-1)] #need to ignore quote marks
+        name = in_list[i][1:(end-1)] #offset is because we need to ignore quote marks
         
         version = in_list[i][end+2:-1]
 
-        #for now we will just ignore the ~, > etc of the version number, and just find the first number character.
+        #for now we will just ignore the ~, > etc of the version number, and just find the first numeric character.
         m = re.search(r"\d",version)
 
         formatedversion = version[m.start():]
