@@ -5,7 +5,7 @@
 This project is not in a complete or working state. It is very much a work in progress, and should be approached with caution. 
 
 ## Architecture
-The project consists of a Python web app, that is deployed using Flask. It relies on HTML and CSS for display and formatting. It uses a local SQL database for caching dependencies once they have been retrieved.
+The project consists of a Python3 web app, that is deployed using Flask. It relies on HTML and CSS for display and formatting. It uses a local SQL database for caching dependencies once they have been retrieved.
 
 When a new dependency tree is requested, the following process takes place:
 
@@ -35,6 +35,8 @@ The DB is not secured. This is for ease of use at this stage of the project, but
 The web page itself (including the user input) is not secured, and does not have any input sanitization.
 
 To deploy the app, the Flask binary needs to be in the path. The Flask environment is currently only tested in development mode (FLASK_ENV = development) and the app needs to be set to 'app' (FLASK_APP = app). Finally, it is run with 'flask run'.
+
+The database needs to be manually initiated by running the init_db.py script, before the webapp is run. This is a temporary workaround to allow development.
 
 ## Unfinished Tasks
 The current list of dependencies is constructed as an unordered, unlinked list. This needs to be updated to produce a tree.
